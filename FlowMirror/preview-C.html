@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowMirror · 摆烂指数分析器</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ============================
+       CSS 变量 — 主题色管理
+       ============================ */
+    :root {
+      /* 背景渐变 */
+      --bg-start: #0f0c29;
+      --bg-mid: #302b63;
+      --bg-end: #24243e;
+
+      /* 毛玻璃 */
+      --glass-bg: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --glass-blur: 20px;
+
+      /* 文字 */
+      --text-primary: #f0eef6;
+      --text-secondary: rgba(240, 238, 246, 0.6);
+      --text-accent: #a78bfa;
+
+      /* 强调色 */
+      --accent-purple: #a78bfa;
+      --accent-cyan: #67e8f9;
+      --accent-pink: #f472b6;
+      --accent-green: #34d399;
+
+      /* 环形进度条渐变 */
+      --ring-gradient: conic-gradient(
+        from 0deg,
+        #a78bfa,
+        #67e8f9,
+        #34d399,
+        #a78bfa
+      );
+
+      /* 侧边栏宽度 */
+      --sidebar-width: 240px;
+      --navbar-height: 64px;
+    }
+
+    /* ============================
+       全局重置
+       ============================ */
+    *,
+    *::before,
+    *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', sans-serif;
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: linear-gradient(135deg, var(--bg-start), var(--bg-mid), var(--bg-end));
+    }
+
+    /* ============================
+       背景极光光斑动画
+       ============================ */
+    .aurora-container {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .aurora-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.35;
+      animation: auroraFloat 20s ease-in-out infinite alternate;
+    }
+
+    .aurora-blob:nth-child(1) {
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #7c3aed 0%, transparent 70%);
+      top: -10%;
+      left: -5%;
+      animation-duration: 22s;
+    }
+
+    .aurora-blob:nth-child(2) {
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, #06b6d4 0%, transparent 70%);
+      top: 40%;
+      right: -8%;
+      animation-duration: 18s;
+      animation-delay: -5s;
+    }
+
+    .aurora-blob:nth-child(3) {
+      width: 350px;
+      height: 350px;
+      background: radial-gradient(circle, #ec4899 0%, transparent 70%);
+      bottom: -5%;
+      left: 30%;
+      animation-duration: 25s;
+      animation-delay: -10s;
+    }
+
+    .aurora-blob:nth-child(4) {
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, #34d399 0%, transparent 70%);
+      top: 20%;
+      left: 50%;
+      animation-duration: 20s;
+      animation-delay: -3s;
+    }
+
+    @keyframes auroraFloat {
+      0% {
+        transform: translate(0, 0) scale(1);
+      }
+      33% {
+        transform: translate(60px, -40px) scale(1.1);
+      }
+      66% {
+        transform: translate(-30px, 50px) scale(0.95);
+      }
+      100% {
+        transform: translate(40px, 20px) scale(1.05);
+      }
+    }
+
+    /* ============================
+       毛玻璃通用类
+       ============================ */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+    }
+
+    /* ============================
+       卡片 hover 光泽扫过效果
+       ============================ */
+    .glass-hover {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-hover::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(255, 255, 255, 0.06) 45%,
+        rgba(255, 255, 255, 0.12) 50%,
+        rgba(255, 255, 255, 0.06) 55%,
+        transparent 60%
+      );
+      transform: translateX(-100%);
+      transition: transform 0.6s ease;
+      pointer-events: none;
+    }
+
+    .glass-hover:hover::after {
+      transform: translateX(100%);
+    }
+
+    /* ============================
+       页面布局
+       ============================ */
+    .app-layout {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ============================
+       侧边栏
+       ============================ */
+    .sidebar {
+      width: var(--sidebar-width);
+      min-height: 100vh;
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-right: 1px solid var(--glass-border);
+      background: rgba(15, 12, 41, 0.5);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 10;
+    }
+
+    /* 侧边栏 Logo */
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      margin-bottom: 24px;
+    }
+
+    .sidebar-logo .logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      color: #fff;
+      box-shadow: 0 0 20px rgba(167, 139, 250, 0.4);
+    }
+
+    .sidebar-logo .logo-text {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      letter-spacing: -0.5px;
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* 侧边栏菜单项 */
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background: rgba(167, 139, 250, 0.15);
+      color: var(--accent-purple);
+      font-weight: 500;
+    }
+
+    .nav-item .nav-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    /* 侧边栏底部用户区 */
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: auto;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .user-role {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    /* ============================
+       主内容区
+       ============================ */
+    .main-content {
+      flex: 1;
+      margin-left: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ============================
+       顶部导航栏
+       ============================ */
+    .navbar {
+      height: var(--navbar-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      background: rgba(15, 12, 41, 0.4);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border-bottom: 1px solid var(--glass-border);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .navbar-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .navbar-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .navbar-breadcrumb {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .navbar-breadcrumb span {
+      color: var(--text-accent);
+    }
+
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .navbar-time {
+      font-family: 'Outfit', sans-serif;
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .navbar-time .time-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .navbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .navbar-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .navbar-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--text-primary);
+    }
+
+    /* ============================
+       页面内容容器
+       ============================ */
+    .page-content {
+      flex: 1;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ============================
+       欢迎区域
+       ============================ */
+    .welcome-section {
+      padding: 32px 36px;
+      animation: fadeSlideUp 0.8s ease-out both;
+    }
+
+    .welcome-greeting {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-weight: 300;
+    }
+
+    .welcome-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+
+    .welcome-title .highlight {
+      background: linear-gradient(90deg, var(--accent-purple), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .welcome-subtitle {
+      font-size: 15px;
+      color: var(--text-secondary);
+      font-weight: 300;
+      line-height: 1.6;
+    }
+
+    /* ============================
+       概览卡片网格
+       ============================ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    .stat-card {
+      padding: 24px;
+      animation: fadeSlideUp 0.8s ease-out both;
+    }
+
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+    .stat-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .stat-card-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    .stat-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .stat-card-icon.purple {
+      background: rgba(167, 139, 250, 0.15);
+      color: var(--accent-purple);
+    }
+
+    .stat-card-icon.cyan {
+      background: rgba(103, 232, 249, 0.15);
+      color: var(--accent-cyan);
+    }
+
+    .stat-card-icon.pink {
+      background: rgba(244, 114, 182, 0.15);
+      color: var(--accent-pink);
+    }
+
+    .stat-card-icon.green {
+      background: rgba(52, 211, 153, 0.15);
+      color: var(--accent-green);
+    }
+
+    .stat-card-value {
+      font-family: 'Outfit', sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .stat-card-value.purple { color: var(--accent-purple); }
+    .stat-card-value.cyan { color: var(--accent-cyan); }
+    .stat-card-value.pink { color: var(--accent-pink); }
+    .stat-card-value.green { color: var(--accent-green); }
+
+    .stat-card-unit {
+      font-size: 16px;
+      font-weight: 400;
+      opacity: 0.7;
+    }
+
+    .stat-card-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 300;
+    }
+
+    /* ============================
+       摆烂指数环形进度条
+       ============================ */
+    .ring-container {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 12px;
+    }
+
+    .ring-bg {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* 流光旋转环 */
+    .ring-glow {
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: var(--ring-gradient);
+      mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+      animation: ringRotate 4s linear infinite;
+    }
+
+    /* 进度遮罩 — 35% 进度 */
+    .ring-progress {
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: var(--ring-gradient);
+      mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 6px));
+      clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+      /* 35% 可见 */
+      background: conic-gradient(
+        from 0deg,
+        rgba(167, 139, 250, 0.9) 0deg,
+        rgba(103, 232, 249, 0.9) 126deg,
+        transparent 126deg,
+        transparent 360deg
+      );
+    }
+
+    @keyframes ringRotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .ring-value {
+      position: relative;
+      z-index: 2;
+      font-family: 'Outfit', sans-serif;
+      font-size: 24px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ============================
+       快速操作按钮区
+       ============================ */
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      animation: fadeSlideUp 0.8s ease-out 0.5s both;
+    }
+
+    .action-btn {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .action-btn-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .action-btn-icon.start {
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.25), rgba(103, 232, 249, 0.25));
+      color: var(--accent-cyan);
+    }
+
+    .action-btn-icon.report {
+      background: linear-gradient(135deg, rgba(244, 114, 182, 0.25), rgba(167, 139, 250, 0.25));
+      color: var(--accent-pink);
+    }
+
+    .action-btn-icon.pet {
+      background: linear-gradient(135deg, rgba(52, 211, 153, 0.25), rgba(103, 232, 249, 0.25));
+      color: var(--accent-green);
+    }
+
+    .action-btn-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .action-btn-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .action-btn-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 300;
+    }
+
+    /* ============================
+       悬浮玩偶 — 发光小精灵/水母
+       ============================ */
+    .floating-pet {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      z-index: 20;
+      width: 72px;
+      height: 72px;
+      cursor: pointer;
+      animation: petFloat 6s ease-in-out infinite, petFadeIn 1s ease-out 1s both;
+    }
+
+    .pet-body {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 水母头部 */
+    .pet-head {
+      width: 48px;
+      height: 40px;
+      border-radius: 50% 50% 40% 40%;
+      background: radial-gradient(
+        ellipse at 50% 30%,
+        rgba(167, 139, 250, 0.7),
+        rgba(103, 232, 249, 0.4),
+        rgba(167, 139, 250, 0.1)
+      );
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      position: relative;
+      animation: petBreathe 3s ease-in-out infinite;
+    }
+
+    /* 水母眼睛 */
+    .pet-eyes {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+    }
+
+    .pet-eye {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+    }
+
+    /* 水母触须 */
+    .pet-tentacles {
+      position: absolute;
+      bottom: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 4px;
+    }
+
+    .pet-tentacle {
+      width: 2px;
+      height: 16px;
+      border-radius: 0 0 2px 2px;
+      background: linear-gradient(to bottom, rgba(167, 139, 250, 0.5), transparent);
+      animation: tentacleWave 2s ease-in-out infinite;
+    }
+
+    .pet-tentacle:nth-child(1) { animation-delay: 0s; height: 14px; }
+    .pet-tentacle:nth-child(2) { animation-delay: 0.2s; height: 18px; }
+    .pet-tentacle:nth-child(3) { animation-delay: 0.4s; height: 12px; }
+    .pet-tentacle:nth-child(4) { animation-delay: 0.1s; height: 16px; }
+    .pet-tentacle:nth-child(5) { animation-delay: 0.3s; height: 14px; }
+
+    /* 呼吸灯效果 — box-shadow 脉冲 */
+    @keyframes petBreathe {
+      0%, 100% {
+        box-shadow:
+          0 0 20px rgba(167, 139, 250, 0.3),
+          0 0 40px rgba(103, 232, 249, 0.15);
+      }
+      50% {
+        box-shadow:
+          0 0 30px rgba(167, 139, 250, 0.6),
+          0 0 60px rgba(103, 232, 249, 0.3),
+          0 0 80px rgba(167, 139, 250, 0.15);
+      }
+    }
+
+    @keyframes petFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+
+    @keyframes petFadeIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.8); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes tentacleWave {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      25% { transform: translateX(2px) rotate(5deg); }
+      75% { transform: translateX(-2px) rotate(-5deg); }
+    }
+
+    /* ============================
+       入场动画 — 淡入上浮
+       ============================ */
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* ============================
+       SVG 图标（内联）
+       ============================ */
+    .icon-svg {
+      width: 20px;
+      height: 20px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ============================
+       背景极光光斑
+       ============================ -->
+  <div class="aurora-container" aria-hidden="true">
+    <div class="aurora-blob"></div>
+    <div class="aurora-blob"></div>
+    <div class="aurora-blob"></div>
+    <div class="aurora-blob"></div>
+  </div>
+
+  <!-- ============================
+       应用布局
+       ============================ -->
+  <div class="app-layout">
+
+    <!-- ========== 侧边栏 ========== -->
+    <aside class="sidebar">
+      <!-- Logo -->
+      <div class="sidebar-logo">
+        <div class="logo-icon">F</div>
+        <div class="logo-text">FlowMirror</div>
+      </div>
+
+      <!-- 导航菜单 -->
+      <nav class="sidebar-nav">
+        <!-- 首页（当前激活） -->
+        <a class="nav-item active" href="#">
+          <span class="nav-icon">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
+              <polyline points="9 21 9 14 15 14 15 21"/>
+            </svg>
+          </span>
+          首页
+        </a>
+
+        <!-- 实时监测 -->
+        <a class="nav-item" href="#">
+          <span class="nav-icon">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </span>
+          实时监测
+        </a>
+
+        <!-- 结果分析 -->
+        <a class="nav-item" href="#">
+          <span class="nav-icon">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+          </span>
+          结果分析
+        </a>
+
+        <!-- 历史记录 -->
+        <a class="nav-item" href="#">
+          <span class="nav-icon">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </span>
+          历史记录
+        </a>
+
+        <!-- 宠物中心 -->
+        <a class="nav-item" href="#">
+          <span class="nav-icon">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <path d="M12 20c-4 0-7-2-7-5s3-5 7-5 7 2 7 5-3 5-7 5z"/>
+              <circle cx="9" cy="11" r="1" fill="currentColor"/>
+              <circle cx="15" cy="11" r="1" fill="currentColor"/>
+              <path d="M8 7c0-2 1.5-4 4-4s4 2 4 4"/>
+            </svg>
+          </span>
+          宠物中心
+        </a>
+      </nav>
+
+      <!-- 用户信息 -->
+      <div class="sidebar-footer">
+        <div class="user-avatar">Z</div>
+        <div class="user-info">
+          <span class="user-name">张小明</span>
+          <span class="user-role">Pro 会员</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ========== 主内容区 ========== -->
+    <main class="main-content">
+
+      <!-- 顶部导航栏 -->
+      <header class="navbar">
+        <div class="navbar-left">
+          <span class="navbar-title">首页概览</span>
+          <span class="navbar-breadcrumb">/ <span>仪表盘</span></span>
+        </div>
+        <div class="navbar-right">
+          <div class="navbar-time">
+            <span class="time-dot"></span>
+            2026年4月17日 周五 14:32
+          </div>
+          <div class="navbar-actions">
+            <div class="navbar-btn" title="通知">
+              <svg class="icon-svg" viewBox="0 0 24 24" style="width:16px;height:16px;">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.73 21a2 2 0 01-3.46 0"/>
+              </svg>
+            </div>
+            <div class="navbar-btn" title="设置">
+              <svg class="icon-svg" viewBox="0 0 24 24" style="width:16px;height:16px;">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- 页面内容 -->
+      <div class="page-content">
+
+        <!-- 欢迎区域 -->
+        <section class="welcome-section glass">
+          <p class="welcome-greeting">下午好，张小明 &#x1F44B;</p>
+          <h1 class="welcome-title">
+            今天的<span class="highlight">摆烂指数</span>如何？
+          </h1>
+          <p class="welcome-subtitle">
+            你今天的表现还不错哦，继续保持专注，让小水母陪你一起进步吧。
+          </p>
+        </section>
+
+        <!-- 概览卡片 -->
+        <section class="stats-grid">
+          <!-- 卡片 1：摆烂指数 -->
+          <div class="stat-card glass glass-hover">
+            <div class="stat-card-header">
+              <span class="stat-card-label">摆烂指数</span>
+              <div class="stat-card-icon purple">
+                <svg class="icon-svg" viewBox="0 0 24 24" style="width:18px;height:18px;">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2z"/>
+                </svg>
+              </div>
+            </div>
+            <!-- 环形进度条 -->
+            <div class="ring-container">
+              <div class="ring-bg">
+                <div class="ring-glow"></div>
+                <div class="ring-progress"></div>
+                <span class="ring-value">35</span>
+              </div>
+            </div>
+            <p class="stat-card-desc">较昨日下降 8%，状态良好</p>
+          </div>
+
+          <!-- 卡片 2：有效工作 -->
+          <div class="stat-card glass glass-hover">
+            <div class="stat-card-header">
+              <span class="stat-card-label">有效工作时长</span>
+              <div class="stat-card-icon cyan">
+                <svg class="icon-svg" viewBox="0 0 24 24" style="width:18px;height:18px;">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+            </div>
+            <div class="stat-card-value cyan">4.5<span class="stat-card-unit">h</span></div>
+            <p class="stat-card-desc">目标 6h，已完成 75%</p>
+          </div>
+
+          <!-- 卡片 3：切换次数 -->
+          <div class="stat-card glass glass-hover">
+            <div class="stat-card-header">
+              <span class="stat-card-label">任务切换次数</span>
+              <div class="stat-card-icon pink">
+                <svg class="icon-svg" viewBox="0 0 24 24" style="width:18px;height:18px;">
+                  <polyline points="17 1 21 5 17 9"/>
+                  <path d="M3 11V9a4 4 0 014-4h14"/>
+                  <polyline points="7 23 3 19 7 15"/>
+                  <path d="M21 13v2a4 4 0 01-4 4H3"/>
+                </svg>
+              </div>
+            </div>
+            <div class="stat-card-value pink">12<span class="stat-card-unit">次</span></div>
+            <p class="stat-card-desc">较昨日减少 3 次，专注力提升</p>
+          </div>
+
+          <!-- 卡片 4：最长连续 -->
+          <div class="stat-card glass glass-hover">
+            <div class="stat-card-header">
+              <span class="stat-card-label">最长连续专注</span>
+              <div class="stat-card-icon green">
+                <svg class="icon-svg" viewBox="0 0 24 24" style="width:18px;height:18px;">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+              </div>
+            </div>
+            <div class="stat-card-value green">90<span class="stat-card-unit">min</span></div>
+            <p class="stat-card-desc">出现在 10:15 - 11:45，深度工作</p>
+          </div>
+        </section>
+
+        <!-- 快速操作按钮区 -->
+        <section class="quick-actions">
+          <!-- 开始监测 -->
+          <a class="action-btn glass glass-hover" href="#">
+            <div class="action-btn-icon start">
+              <svg class="icon-svg" viewBox="0 0 24 24" style="width:22px;height:22px;">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+            </div>
+            <div class="action-btn-text">
+              <span class="action-btn-title">开始监测</span>
+              <span class="action-btn-desc">启动实时工作状态追踪</span>
+            </div>
+          </a>
+
+          <!-- 查看报告 -->
+          <a class="action-btn glass glass-hover" href="#">
+            <div class="action-btn-icon report">
+              <svg class="icon-svg" viewBox="0 0 24 24" style="width:22px;height:22px;">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <div class="action-btn-text">
+              <span class="action-btn-title">查看报告</span>
+              <span class="action-btn-desc">浏览今日详细分析报告</span>
+            </div>
+          </a>
+
+          <!-- 宠物互动 -->
+          <a class="action-btn glass glass-hover" href="#">
+            <div class="action-btn-icon pet">
+              <svg class="icon-svg" viewBox="0 0 24 24" style="width:22px;height:22px;">
+                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 000-7.78z"/>
+              </svg>
+            </div>
+            <div class="action-btn-text">
+              <span class="action-btn-title">宠物互动</span>
+              <span class="action-btn-desc">去看看你的专属小水母</span>
+            </div>
+          </a>
+        </section>
+
+      </div><!-- /page-content -->
+    </main>
+  </div><!-- /app-layout -->
+
+  <!-- ============================
+       悬浮玩偶 — 发光小水母
+       ============================ -->
+  <div class="floating-pet" aria-label="宠物小水母">
+    <div class="pet-body">
+      <div class="pet-head">
+        <div class="pet-eyes">
+          <div class="pet-eye"></div>
+          <div class="pet-eye"></div>
+        </div>
+        <div class="pet-tentacles">
+          <div class="pet-tentacle"></div>
+          <div class="pet-tentacle"></div>
+          <div class="pet-tentacle"></div>
+          <div class="pet-tentacle"></div>
+          <div class="pet-tentacle"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

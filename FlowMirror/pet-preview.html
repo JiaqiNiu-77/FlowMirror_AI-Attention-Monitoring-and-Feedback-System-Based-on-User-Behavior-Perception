@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>宠物中心 - 宠物图鉴预览</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; padding: 40px; }
+.header { text-align: center; margin-bottom: 40px; }
+.header h1 { font-size: 36px; font-weight: 800; color: #6B5CE7; margin-bottom: 8px; }
+.header p { font-size: 16px; color: #888; }
+
+.section { max-width: 1100px; margin: 0 auto 40px; }
+.section-title { font-size: 18px; font-weight: 700; color: #333; margin-bottom: 20px; padding-left: 12px; border-left: 4px solid #6B5CE7; }
+
+/* 宠物卡片 */
+.pet-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+.pet-card {
+    background: #fff; border-radius: 16px; padding: 20px 16px; text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer; border: 2px solid transparent; position: relative;
+}
+.pet-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+.pet-card.selected { border-color: #6B5CE7; }
+
+.pet-avatar {
+    width: 72px; height: 72px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px; font-size: 36px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.pet-card .pet-name { font-size: 15px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.pet-card .pet-desc { font-size: 12px; color: #999; line-height: 1.5; }
+.pet-card .unlock-tag {
+    position: absolute; top: 8px; right: 8px;
+    padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; color: #fff;
+}
+
+/* 皮肤卡片 */
+.skin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }
+.skin-card {
+    background: #fff; border-radius: 16px; padding: 20px 16px; text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); transition: transform 0.2s;
+    cursor: pointer; border: 2px solid transparent; position: relative;
+}
+.skin-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+
+.skin-preview {
+    width: 64px; height: 64px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px; font-size: 32px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.skin-card .skin-name { font-size: 14px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.skin-card .skin-desc { font-size: 12px; color: #999; line-height: 1.5; }
+.skin-card .skin-req { font-size: 11px; color: #6B5CE7; font-weight: 600; margin-top: 8px; }
+
+/* 颜色方案 */
+.bg-default { background: linear-gradient(135deg, #e8e5ff, #f0eeff); }
+.bg-fire { background: linear-gradient(135deg, #ff6b35, #ff9a56); }
+.bg-ice { background: linear-gradient(135deg, #74b9ff, #a29bfe); }
+.bg-forest { background: linear-gradient(135deg, #00b894, #55efc4); }
+.bg-gold { background: linear-gradient(135deg, #fdcb6e, #f39c12); }
+.bg-shadow { background: linear-gradient(135deg, #2d3436, #636e72); }
+.bg-candy { background: linear-gradient(135deg, #fd79a8, #e84393); }
+.bg-galaxy { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
+.bg-sunset { background: linear-gradient(135deg, #e17055, #fdcb6e); }
+.bg-ocean { background: linear-gradient(135deg, #0984e3, #74b9ff); }
+.bg-cherry { background: linear-gradient(135deg, #ff7675, #d63031); }
+.bg-star { background: linear-gradient(135deg, #ffeaa7, #fdcb6e); }
+.bg-rainbow { background: linear-gradient(135deg, #e84393, #6c5ce7, #0984e3, #00b894); }
+.bg-neon { background: linear-gradient(135deg, #00cec9, #6c5ce7); }
+.bg-royal { background: linear-gradient(135deg, #6c5ce7, #e84393); }
+.bg-dream { background: linear-gradient(135deg, #a29bfe, #fd79a8); }
+
+.tag-free { background: #10b981; }
+.tag-level5 { background: #f59e0b; }
+.tag-level10 { background: #ec4899; }
+.tag-special { background: #6B5CE7; }
+.tag-streak { background: #ef4444; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🐾 宠物图鉴预览</h1>
+    <p>8种宠物类型 × 12种皮肤 = 96种搭配</p>
+</div>
+
+<!-- 宠物类型 -->
+<div class="section">
+    <div class="section-title">🐱 宠物类型（8种）</div>
+    <div class="pet-grid">
+        <div class="pet-card selected">
+            <div class="pet-avatar bg-default">🐱</div>
+            <div class="pet-name">像素猫咪</div>
+            <div class="pet-desc">专注伙伴，默认宠物</div>
+            <span class="unlock-tag tag-free">默认</span>
+        </div>
+        <div class="pet-card">
+            <div class="pet-avatar bg-default">🐶</div>
+            <div class="pet-name">忠诚小狗</div>
+            <div class="pet-desc">热情活泼，专注5天解锁</div>
+            <span class="unlock-tag tag-level5">Lv.5</span>
+        </div>
+        <div class="pet-card">
+            <div class="pet-avatar bg-default">🐰</div>
+            <div class="pet-name">元气兔兔</div>
+            <div class="pet-desc">蹦蹦跳跳，专注10天解锁</div>
+            <span class="unlock-tag tag-level10">Lv.10</span>
+        </div>
+        <div class="pet-card">
+            <div class="pet-avatar bg-default">🐼</div>
+            <div class="pet-name">佛系熊猫</div>
+            <div class="pet-desc">淡定从容，累计300分钟解锁</div>
+            <span class="unlock-tag tag-special">300分钟</span>
+        </div>
+        <div class="pet-card">
+            <div class="pet-avatar bg-default">🦊</div>
+            <div class="pet-name">机智小狐</div>
+            <div class="pet-desc">聪明伶俐，累计600分钟解锁</div>
+            <span class="unlock-tag tag-special">600分钟</span>
+        </div>
+        <div class="pet-card">
+            <div class="pet-avatar bg-default">🐧</div>
+            <div class="pet-name">呆萌企鹅</div>
+            <div class="pet-desc">憨态可掬，累计1000分钟解锁</div>
+            <span class="unlock-tag tag-special">1000分钟</span>
+        </div>
+        <div class="pet-card">
+            <div class="pet-avatar bg-default">🦉</div>
+            <div class="pet-name">夜行猫头鹰</div>
+            <div class="pet-desc">深夜守护者，累计1500分钟解锁</div>
+            <span class="unlock-tag tag-special">1500分钟</span>
+        </div>
+        <div class="pet-card">
+            <div class="pet-avatar bg-default">🐉</div>
+            <div class="pet-name">上古神龙</div>
+            <div class="pet-desc">传说中的宠物，累计3000分钟解锁</div>
+            <span class="unlock-tag tag-streak">3000分钟</span>
+        </div>
+    </div>
+</div>
+
+<!-- 皮肤 -->
+<div class="section">
+    <div class="section-title">🎨 宠物皮肤（12种）</div>
+    <div class="skin-grid">
+        <div class="skin-card">
+            <div class="skin-preview bg-default">🐱</div>
+            <div class="skin-name">默认皮肤</div>
+            <div class="skin-desc">简约清新，陪伴你的每一天</div>
+            <div class="skin-req">默认拥有</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-fire">🐱</div>
+            <div class="skin-name">🔥 烈焰皮肤</div>
+            <div class="skin-desc">燃烧吧小宇宙！专注力爆表时解锁</div>
+            <div class="skin-req">摆烂指数 < 20 时解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-ice">🐱</div>
+            <div class="skin-name">❄️ 冰霜皮肤</div>
+            <div class="skin-desc">冷静沉着，冰清玉洁</div>
+            <div class="skin-req">连续专注3天解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-forest">🐱</div>
+            <div class="skin-name">🌿 森林皮肤</div>
+            <div class="skin-desc">大自然的气息，清新自然</div>
+            <div class="skin-req">连续专注5天解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-gold">🐱</div>
+            <div class="skin-name">✨ 黄金皮肤</div>
+            <div class="skin-desc">金光闪闪，尊贵无比</div>
+            <div class="skin-req">累计专注1000分钟解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-shadow">🐱</div>
+            <div class="skin-name">🌑 暗影皮肤</div>
+            <div class="skin-desc">暗夜行者，神秘莫测</div>
+            <div class="skin-req">累计专注2000分钟解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-candy">🐱</div>
+            <div class="skin-name">🍬 甜蜜皮肤</div>
+            <div class="skin-desc">甜甜的，像糖果一样可爱</div>
+            <div class="skin-req">累计专注500分钟解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-galaxy">🐱</div>
+            <div class="skin-name">🌌 星空皮肤</div>
+            <div class="skin-desc">遨游星海，无限可能</div>
+            <div class="skin-req">宠物达到 Lv.15 解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-sunset">🐱</div>
+            <div class="skin-name">🌅 晚霞皮肤</div>
+            <div class="skin-desc">夕阳西下，温暖如初</div>
+            <div class="skin-req">累计专注800分钟解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-ocean">🐱</div>
+            <div class="skin-name">🌊 深海皮肤</div>
+            <div class="skin-desc">深蓝大海，宁静致远</div>
+            <div class="skin-req">累计专注1500分钟解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-cherry">🐱</div>
+            <div class="skin-name">🌸 樱花皮肤</div>
+            <div class="skin-desc">春风十里，樱花飘落</div>
+            <div class="skin-req">连续专注7天解锁</div>
+        </div>
+        <div class="skin-card">
+            <div class="skin-preview bg-rainbow">🐱</div>
+            <div class="skin-name">🌈 彩虹皮肤</div>
+            <div class="skin-desc">雨后彩虹，绚丽多彩</div>
+            <div class="skin-req">宠物达到 Lv.20 解锁</div>
+        </div>
+    </div>
+</div>
+
+<!-- 搭配示例 -->
+<div class="section">
+    <div class="section-title">✨ 搭配示例</div>
+    <div class="skin-grid">
+        <div class="skin-card" style="border-color: #6B5CE7;">
+            <div class="skin-preview bg-fire">🦊</div>
+            <div class="skin-name">烈焰小狐</div>
+            <div class="skin-desc">机智小狐 + 烈焰皮肤</div>
+        </div>
+        <div class="skin-card" style="border-color: #6B5CE7;">
+            <div class="skin-preview bg-galaxy">🐉</div>
+            <div class="skin-name">星空神龙</div>
+            <div class="skin-desc">上古神龙 + 星空皮肤</div>
+        </div>
+        <div class="skin-card" style="border-color: #6B5CE7;">
+            <div class="skin-preview bg-ice">🐧</div>
+            <div class="skin-name">冰霜企鹅</div>
+            <div class="skin-desc">呆萌企鹅 + 冰霜皮肤</div>
+        </div>
+        <div class="skin-card" style="border-color: #6B5CE7;">
+            <div class="skin-preview bg-rainbow">🐰</div>
+            <div class="skin-name">彩虹兔兔</div>
+            <div class="skin-desc">元气兔兔 + 彩虹皮肤</div>
+        </div>
+        <div class="skin-card" style="border-color: #6B5CE7;">
+            <div class="skin-preview bg-gold">🐼</div>
+            <div class="skin-name">黄金熊猫</div>
+            <div class="skin-desc">佛系熊猫 + 黄金皮肤</div>
+        </div>
+        <div class="skin-card" style="border-color: #6B5CE7;">
+            <div class="skin-preview bg-cherry">🐶</div>
+            <div class="skin-name">樱花小狗</div>
+            <div class="skin-desc">忠诚小狗 + 樱花皮肤</div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlowMirror — 摆烂指数分析器</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,200;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* ============================================
+       CSS 变量 — 主题色管理
+       ============================================ */
+    :root {
+      --bg:          #fafafa;
+      --fg:          #1a1a1a;
+      --accent:      #ff4757;
+      --muted:       #636e72;
+      --border:      #e0e0e0;
+      --card-bg:     #ffffff;
+      --sidebar-w:   240px;
+      --nav-h:       64px;
+      --font-serif:  'Playfair Display', Georgia, 'Times New Roman', serif;
+      --font-sans:   'DM Sans', -apple-system, 'Helvetica Neue', sans-serif;
+    }
+
+    /* ============================================
+       全局重置 & 基础排版
+       ============================================ */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      font-size: 16px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ============================================
+       页面加载淡入动画
+       ============================================ */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(28px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in {
+      opacity: 0;
+      animation: fadeInUp 0.8s ease-out forwards;
+    }
+
+    /* 为不同元素设置不同的动画延迟，营造错落感 */
+    .fade-in-d1 { animation-delay: 0.1s; }
+    .fade-in-d2 { animation-delay: 0.25s; }
+    .fade-in-d3 { animation-delay: 0.4s; }
+    .fade-in-d4 { animation-delay: 0.55s; }
+    .fade-in-d5 { animation-delay: 0.7s; }
+    .fade-in-d6 { animation-delay: 0.85s; }
+    .fade-in-d7 { animation-delay: 1.0s; }
+
+    /* ============================================
+       顶部导航栏
+       ============================================ */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--nav-h);
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      z-index: 100;
+    }
+
+    /* Logo — 衬线字体 */
+    .logo {
+      font-family: var(--font-serif);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--fg);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.5; transform: scale(1.4); }
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    .nav-time {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.04em;
+    }
+
+    .nav-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--fg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--card-bg);
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    /* ============================================
+       侧边栏
+       ============================================ */
+    .sidebar {
+      position: fixed;
+      top: var(--nav-h);
+      left: 0;
+      bottom: 0;
+      width: var(--sidebar-w);
+      background: var(--card-bg);
+      border-right: 1px solid var(--border);
+      padding: 40px 0;
+      z-index: 90;
+    }
+
+    .sidebar-menu {
+      list-style: none;
+    }
+
+    .sidebar-menu li {
+      padding: 14px 32px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.25s, background 0.25s;
+      position: relative;
+    }
+
+    .sidebar-menu li:hover {
+      color: var(--fg);
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    /* 当前激活项 — 左侧珊瑚红竖线 */
+    .sidebar-menu li.active {
+      color: var(--fg);
+      font-weight: 500;
+    }
+
+    .sidebar-menu li.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 8px;
+      bottom: 8px;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .sidebar-menu li .menu-icon {
+      display: inline-block;
+      width: 20px;
+      text-align: center;
+      margin-right: 12px;
+      font-size: 1rem;
+    }
+
+    /* 侧边栏底部装饰 */
+    .sidebar-footer {
+      position: absolute;
+      bottom: 32px;
+      left: 32px;
+      right: 32px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+
+    .sidebar-footer p {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* ============================================
+       主内容区
+       ============================================ */
+    .main-content {
+      margin-left: var(--sidebar-w);
+      margin-top: var(--nav-h);
+      padding: 56px 56px 120px;
+      min-height: calc(100vh - var(--nav-h));
+    }
+
+    /* ============================================
+       欢迎区域 — 杂志封面感
+       ============================================ */
+    .welcome-section {
+      margin-bottom: 64px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .welcome-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    .welcome-title {
+      font-family: var(--font-serif);
+      font-size: 3.2rem;
+      font-weight: 900;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+      max-width: 680px;
+    }
+
+    .welcome-title .accent {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    .welcome-subtitle {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 520px;
+      line-height: 1.7;
+      font-weight: 400;
+    }
+
+    /* ============================================
+       引用/总结样式 — 大引号装饰
+       ============================================ */
+    .quote-block {
+      position: relative;
+      margin: 48px 0 56px;
+      padding: 32px 0 32px 48px;
+      border-left: 2px solid var(--accent);
+    }
+
+    .quote-block::before {
+      content: '\201C';
+      position: absolute;
+      top: -8px;
+      left: 8px;
+      font-family: var(--font-serif);
+      font-size: 4rem;
+      color: var(--accent);
+      line-height: 1;
+      opacity: 0.3;
+    }
+
+    .quote-block p {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      font-style: italic;
+      color: var(--fg);
+      line-height: 1.7;
+      max-width: 600px;
+    }
+
+    .quote-block .quote-author {
+      margin-top: 12px;
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-style: normal;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    /* ============================================
+       概览卡片区域 — 非对称布局
+       ============================================ */
+    .cards-section-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 24px;
+      margin-bottom: 64px;
+    }
+
+    /* 卡片基础样式 */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 36px 32px;
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                  box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+    }
+
+    .card-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+    }
+
+    .card-value {
+      font-family: var(--font-serif);
+      font-weight: 700;
+      color: var(--fg);
+      line-height: 1;
+    }
+
+    .card-unit {
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+
+    .card-desc {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* 卡片 1：摆烂指数 — 超大号数字，跨 7 列 */
+    .card-index {
+      grid-column: 1 / 8;
+      padding: 48px 40px;
+      border-color: var(--accent);
+      border-width: 1px;
+    }
+
+    .card-index .card-value {
+      font-size: 7.5rem; /* 120px+ */
+      color: var(--accent);
+      letter-spacing: -0.04em;
+    }
+
+    .card-index .card-index-bar {
+      margin-top: 24px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .card-index .card-index-fill {
+      height: 100%;
+      width: 35%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 1.2s ease-out;
+    }
+
+    .card-index .card-index-label {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 0.06em;
+    }
+
+    /* 卡片 2：有效工作 — 跨 5 列，有顶部偏移 */
+    .card-work {
+      grid-column: 8 / 13;
+      margin-top: 32px; /* 非对称偏移 */
+    }
+
+    .card-work .card-value {
+      font-size: 3.2rem;
+    }
+
+    /* 卡片 3：切换次数 — 跨 5 列 */
+    .card-switch {
+      grid-column: 1 / 6;
+    }
+
+    .card-switch .card-value {
+      font-size: 3.2rem;
+    }
+
+    /* 卡片 4：最长连续 — 跨 7 列，有顶部偏移 */
+    .card-streak {
+      grid-column: 6 / 13;
+      margin-top: -16px; /* 非对称偏移 */
+    }
+
+    .card-streak .card-value {
+      font-size: 3.2rem;
+    }
+
+    .card-streak .card-tag {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 4px 12px;
+      background: rgba(255, 71, 87, 0.08);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 20px;
+    }
+
+    /* ============================================
+       快速操作区
+       ============================================ */
+    .actions-section {
+      border-top: 1px solid var(--border);
+      padding-top: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .actions-text {
+      max-width: 400px;
+    }
+
+    .actions-text h3 {
+      font-family: var(--font-serif);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .actions-text p {
+      font-size: 0.9rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .actions-buttons {
+      display: flex;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.25s, transform 0.25s;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary:hover {
+      background: #e8404f;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      background: transparent;
+      color: var(--fg);
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.25s, transform 0.25s;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--fg);
+      transform: translateY(-2px);
+    }
+
+    /* ============================================
+       悬浮玩偶 — 纯 CSS 线条插画小人
+       ============================================ */
+    .mascot {
+      position: fixed;
+      right: 40px;
+      bottom: 40px;
+      width: 80px;
+      height: 120px;
+      z-index: 200;
+      animation: float-mascot 3s ease-in-out infinite;
+      cursor: default;
+    }
+
+    @keyframes float-mascot {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-12px); }
+    }
+
+    /* 小人头部 */
+    .mascot-head {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 28px;
+      height: 28px;
+      border: 2px solid var(--fg);
+      border-radius: 50%;
+    }
+
+    /* 小人眼睛 */
+    .mascot-head::before,
+    .mascot-head::after {
+      content: '';
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: var(--fg);
+      border-radius: 50%;
+      top: 10px;
+    }
+
+    .mascot-head::before { left: 7px; }
+    .mascot-head::after  { right: 7px; }
+
+    /* 小人嘴巴 — 微笑弧线 */
+    .mascot-mouth {
+      position: absolute;
+      top: 17px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 8px;
+      height: 4px;
+      border-bottom: 2px solid var(--fg);
+      border-radius: 0 0 4px 4px;
+    }
+
+    /* 小人身体 */
+    .mascot-body {
+      position: absolute;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 36px;
+      background: var(--fg);
+    }
+
+    /* 小人手臂 */
+    .mascot-arm-left,
+    .mascot-arm-right {
+      position: absolute;
+      top: 36px;
+      width: 20px;
+      height: 2px;
+      background: var(--fg);
+    }
+
+    .mascot-arm-left {
+      left: 50%;
+      transform: translateX(-100%) rotate(30deg);
+      transform-origin: right center;
+    }
+
+    .mascot-arm-right {
+      left: 50%;
+      transform: rotate(-30deg);
+      transform-origin: left center;
+    }
+
+    /* 小人腿 */
+    .mascot-leg-left,
+    .mascot-leg-right {
+      position: absolute;
+      top: 66px;
+      width: 2px;
+      height: 28px;
+      background: var(--fg);
+    }
+
+    .mascot-leg-left {
+      left: 50%;
+      transform: translateX(-100%) rotate(8deg);
+      transform-origin: top center;
+    }
+
+    .mascot-leg-right {
+      left: 50%;
+      transform: rotate(-8deg);
+      transform-origin: top center;
+    }
+
+    /* 小人旁边的装饰圆点 */
+    .mascot-deco {
+      position: absolute;
+      border-radius: 50%;
+      border: 1.5px solid var(--accent);
+      opacity: 0.4;
+    }
+
+    .mascot-deco-1 {
+      width: 6px;
+      height: 6px;
+      top: 10px;
+      right: -4px;
+      animation: float-mascot 3s ease-in-out infinite 0.5s;
+    }
+
+    .mascot-deco-2 {
+      width: 4px;
+      height: 4px;
+      top: 50px;
+      left: -6px;
+      animation: float-mascot 3s ease-in-out infinite 1s;
+    }
+
+    .mascot-deco-3 {
+      width: 5px;
+      height: 5px;
+      bottom: 10px;
+      right: -8px;
+      animation: float-mascot 3s ease-in-out infinite 0.3s;
+    }
+
+    /* ============================================
+       装饰性元素
+       ============================================ */
+    .section-divider {
+      width: 48px;
+      height: 1px;
+      background: var(--accent);
+      margin: 40px 0;
+    }
+
+    /* 页脚 */
+    .page-footer {
+      margin-top: 80px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    /* ============================================
+       响应式适配（基础）
+       ============================================ */
+    @media (max-width: 1024px) {
+      .sidebar { display: none; }
+      .main-content { margin-left: 0; padding: 40px 32px 120px; }
+      .welcome-title { font-size: 2.4rem; }
+      .card-index .card-value { font-size: 5rem; }
+      .cards-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .card-index,
+      .card-work,
+      .card-switch,
+      .card-streak {
+        grid-column: auto;
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .main-content { padding: 32px 20px 120px; }
+      .welcome-title { font-size: 1.8rem; }
+      .card-index .card-value { font-size: 4rem; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .actions-section { flex-direction: column; align-items: flex-start; }
+      .top-nav { padding: 0 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================
+       顶部导航栏
+       ======================================== -->
+  <nav class="top-nav fade-in fade-in-d1">
+    <div class="logo">
+      <span class="logo-dot"></span>
+      FlowMirror
+    </div>
+    <div class="nav-right">
+      <span class="nav-time">2026 年 4 月 17 日 &middot; 周四 &middot; 14:32</span>
+      <div class="nav-avatar">U</div>
+    </div>
+  </nav>
+
+  <!-- ========================================
+       侧边栏
+       ======================================== -->
+  <aside class="sidebar fade-in fade-in-d2">
+    <ul class="sidebar-menu">
+      <li class="active">
+        <span class="menu-icon">&#9670;</span>首页
+      </li>
+      <li>
+        <span class="menu-icon">&#9673;</span>实时监测
+      </li>
+      <li>
+        <span class="menu-icon">&#9672;</span>结果分析
+      </li>
+      <li>
+        <span class="menu-icon">&#9671;</span>历史记录
+      </li>
+      <li>
+        <span class="menu-icon">&#9826;</span>宠物中心
+      </li>
+    </ul>
+    <div class="sidebar-footer">
+      <p>FlowMirror v2.0<br />让摆烂变得可见</p>
+    </div>
+  </aside>
+
+  <!-- ========================================
+       主内容区
+       ======================================== -->
+  <main class="main-content">
+
+    <!-- 欢迎区域 — 杂志封面感排版 -->
+    <section class="welcome-section fade-in fade-in-d3">
+      <p class="welcome-label">Dashboard / Overview</p>
+      <h1 class="welcome-title">
+        今天，你的专注力<br />处于 <span class="accent">临界状态</span>
+      </h1>
+      <p class="welcome-subtitle">
+        过去 8 小时内，FlowMirror 捕捉了你的每一次注意力波动。以下是今日的摆烂指数摘要。
+      </p>
+    </section>
+
+    <!-- 引用/总结区块 -->
+    <div class="quote-block fade-in fade-in-d4">
+      <p>摆烂不是罪，是身体在告诉你需要休息。但连续三天指数超过 40，也许该认真想想了。</p>
+      <span class="quote-author">— FlowMirror 每日洞察</span>
+    </div>
+
+    <!-- 概览卡片区域 -->
+    <section class="fade-in fade-in-d5">
+      <p class="cards-section-title">Today's Metrics</p>
+
+      <div class="cards-grid">
+
+        <!-- 卡片 1：摆烂指数（超大号数字） -->
+        <div class="card card-index">
+          <p class="card-label">摆烂指数</p>
+          <div class="card-value">35</div>
+          <div class="card-desc">中等偏上 — 建议关注下午时段的注意力曲线</div>
+          <div class="card-index-bar">
+            <div class="card-index-fill"></div>
+          </div>
+          <div class="card-index-label">
+            <span>0 — 专注</span>
+            <span>100 — 彻底摆烂</span>
+          </div>
+        </div>
+
+        <!-- 卡片 2：有效工作时长 -->
+        <div class="card card-work">
+          <p class="card-label">有效工作</p>
+          <div class="card-value">4.5<span class="card-unit">h</span></div>
+          <p class="card-desc">较昨日减少 0.8 小时<br />主要流失在 13:00–15:00</p>
+        </div>
+
+        <!-- 卡片 3：切换次数 -->
+        <div class="card card-switch">
+          <p class="card-label">应用切换</p>
+          <div class="card-value">12<span class="card-unit">次</span></div>
+          <p class="card-desc">高频切换集中在社交媒体<br />与工作应用之间</p>
+        </div>
+
+        <!-- 卡片 4：最长连续专注 -->
+        <div class="card card-streak">
+          <p class="card-label">最长连续专注</p>
+          <div class="card-value">90<span class="card-unit">min</span></div>
+          <p class="card-desc">出现在上午 09:15–10:45，状态良好</p>
+          <span class="card-tag">今日最佳时段</span>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 分隔装饰线 -->
+    <div class="section-divider fade-in fade-in-d6"></div>
+
+    <!-- 快速操作区 -->
+    <section class="actions-section fade-in fade-in-d6">
+      <div class="actions-text">
+        <h3>准备开始专注了吗？</h3>
+        <p>开启一次 25 分钟的番茄钟，FlowMirror 将全程守护你的注意力。</p>
+      </div>
+      <div class="actions-buttons">
+        <button class="btn-primary">&#9654; 开始专注</button>
+        <button class="btn-secondary">查看详情</button>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="page-footer fade-in fade-in-d7">
+      <span>FlowMirror &copy; 2026 &mdash; 让摆烂变得可见</span>
+      <span>Designed with care.</span>
+    </footer>
+
+  </main>
+
+  <!-- ========================================
+       悬浮玩偶 — 纯 CSS 线条插画小人
+       ======================================== -->
+  <div class="mascot" title="FlowMirror 小助手">
+    <div class="mascot-head">
+      <div class="mascot-mouth"></div>
+    </div>
+    <div class="mascot-body"></div>
+    <div class="mascot-arm-left"></div>
+    <div class="mascot-arm-right"></div>
+    <div class="mascot-leg-left"></div>
+    <div class="mascot-leg-right"></div>
+    <!-- 装饰圆点 -->
+    <div class="mascot-deco mascot-deco-1"></div>
+    <div class="mascot-deco mascot-deco-2"></div>
+    <div class="mascot-deco mascot-deco-3"></div>
+  </div>
+
+</body>
+</html>

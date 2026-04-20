@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>摆烂人格图鉴 - 示意图</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f7; padding: 40px; }
+.header { text-align: center; margin-bottom: 40px; }
+.header h1 { font-size: 36px; font-weight: 800; color: #6B5CE7; margin-bottom: 8px; }
+.header p { font-size: 16px; color: #888; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; max-width: 1100px; margin: 0 auto; }
+.card { background: #fff; border-radius: 16px; padding: 28px 20px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; border: 2px solid transparent; }
+.card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+
+/* 统一图标风格：圆角方块 + 渐变背景 */
+.icon-box {
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 14px;
+    font-size: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.blue .icon-box { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+.orange .icon-box { background: linear-gradient(135deg, #f59e0b, #f97316); }
+.green .icon-box { background: linear-gradient(135deg, #10b981, #14b8a6); }
+.pink .icon-box { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+
+.card .name { font-size: 17px; font-weight: 700; margin-bottom: 6px; color: #1a1a2e; }
+.card .tagline { font-size: 12.5px; color: #999; line-height: 1.6; min-height: 40px; }
+.card .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-top: 12px; color: #fff; }
+.blue .badge { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+.orange .badge { background: linear-gradient(135deg, #f59e0b, #f97316); }
+.green .badge { background: linear-gradient(135deg, #10b981, #14b8a6); }
+.pink .badge { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+
+.blue { border-color: #e8e5ff; }
+.blue:hover { border-color: #6366f1; }
+.orange { border-color: #fff3e0; }
+.orange:hover { border-color: #f59e0b; }
+.green { border-color: #e0f5ee; }
+.green:hover { border-color: #10b981; }
+.pink { border-color: #fce4ec; }
+.pink:hover { border-color: #ec4899; }
+
+.section-title { grid-column: 1 / -1; font-size: 14px; font-weight: 700; color: #aaa; letter-spacing: 2px; padding: 10px 0 5px; border-bottom: 1px solid #eee; margin-bottom: 15px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🔮 摆烂人格图鉴</h1>
+    <p>16种人格类型，你是哪一种？基于你的工作习惯自动生成</p>
+</div>
+
+<div class="grid">
+    <div class="section-title">🏆 高效产出型</div>
+    <div class="card blue">
+        <div class="icon-box">🧠</div>
+        <div class="name">深度专注大师</div>
+        <div class="tagline">专注力MAX，一旦进入心流状态谁也拦不住</div>
+        <span class="badge">摆烂指数 0-20</span>
+    </div>
+    <div class="card blue">
+        <div class="icon-box">⚡</div>
+        <div class="name">闪电产出王</div>
+        <div class="tagline">效率爆表，别人还在发呆你已经交稿了</div>
+        <span class="badge">摆烂指数 0-20</span>
+    </div>
+    <div class="card blue">
+        <div class="icon-box">🎯</div>
+        <div class="name">精准狙击手</div>
+        <div class="tagline">目标明确，直奔主题，绝不浪费时间</div>
+        <span class="badge">摆烂指数 20-35</span>
+    </div>
+    <div class="card blue">
+        <div class="icon-box">📚</div>
+        <div class="name">学霸附体</div>
+        <div class="tagline">学习工作两不误，知识就是你的武器</div>
+        <span class="badge">摆烂指数 20-35</span>
+    </div>
+
+    <div class="section-title">🛋️ 摆烂专区</div>
+    <div class="card orange">
+        <div class="icon-box">☕</div>
+        <div class="name">摸鱼达人</div>
+        <div class="tagline">工作五分钟，摸鱼两小时，深谙职场生存之道</div>
+        <span class="badge">摆烂指数 65-80</span>
+    </div>
+    <div class="card orange">
+        <div class="icon-box">🦥</div>
+        <div class="name">摆烂王者</div>
+        <div class="tagline">摆烂界的天花板，躺平也是一种艺术</div>
+        <span class="badge">摆烂指数 80-100</span>
+    </div>
+    <div class="card orange">
+        <div class="icon-box">🛋️</div>
+        <div class="name">树懒模式</div>
+        <div class="tagline">慢…慢…慢…急什么，明天再说</div>
+        <span class="badge">摆烂指数 65-80</span>
+    </div>
+    <div class="card orange">
+        <div class="icon-box">🎮</div>
+        <div class="name">游戏人间</div>
+        <div class="tagline">工作？什么工作？我只知道Steam打折了</div>
+        <span class="badge">摆烂指数 80-100</span>
+    </div>
+
+    <div class="section-title">⚖️ 劳逸平衡型</div>
+    <div class="card green">
+        <div class="icon-box">🔄</div>
+        <div class="name">切换狂魔</div>
+        <div class="tagline">一秒切5个APP，多任务处理大师（自封）</div>
+        <span class="badge">摆烂指数 50-65</span>
+    </div>
+    <div class="card green">
+        <div class="icon-box">📱</div>
+        <div class="name">社交蝴蝶</div>
+        <div class="tagline">微信QQ飞书钉钉来回切换，社交永不掉线</div>
+        <span class="badge">摆烂指数 50-65</span>
+    </div>
+    <div class="card green">
+        <div class="icon-box">🎵</div>
+        <div class="name">BGM打工仔</div>
+        <div class="tagline">没有音乐我活不了，边听歌边干活才是人生</div>
+        <span class="badge">摆烂指数 35-50</span>
+    </div>
+    <div class="card green">
+        <div class="icon-box">☯️</div>
+        <div class="name">佛系打工</div>
+        <div class="tagline">随缘工作，随缘摆烂，一切看心情</div>
+        <span class="badge">摆烂指数 35-50</span>
+    </div>
+
+    <div class="section-title">🌟 生活节奏型</div>
+    <div class="card pink">
+        <div class="icon-box">🌙</div>
+        <div class="name">熬夜冠军</div>
+        <div class="tagline">凌晨三点的灵感是最好的，白天是用来睡觉的</div>
+        <span class="badge">夜猫子专属</span>
+    </div>
+    <div class="card pink">
+        <div class="icon-box">🌅</div>
+        <div class="name">早起鸟儿</div>
+        <div class="tagline">六点起床，别人还没醒你已经干完一半了</div>
+        <span class="badge">晨型人专属</span>
+    </div>
+    <div class="card pink">
+        <div class="icon-box">🍜</div>
+        <div class="name">干饭第一名</div>
+        <div class="tagline">工作可以摆烂，但饭不能不吃，准时下班冲食堂</div>
+        <span class="badge">美食优先</span>
+    </div>
+    <div class="card pink">
+        <div class="icon-box">🔥</div>
+        <div class="name">卷王本卷</div>
+        <div class="tagline">不是在卷就是在卷的路上，卷完别人卷自己</div>
+        <span class="badge">内卷达人</span>
+    </div>
+</div>
+
+</body>
+</html>

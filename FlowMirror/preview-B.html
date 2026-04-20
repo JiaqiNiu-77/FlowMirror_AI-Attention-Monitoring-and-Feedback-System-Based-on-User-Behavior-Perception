@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlowMirror 摆烂指数分析器</title>
+
+  <!-- Google Fonts 引入 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+
+  <style>
+    /* ========================================
+       CSS 变量 - 主题色管理
+    ======================================== */
+    :root {
+      --bg-cream: #fdf6ec;         /* 奶油白底 */
+      --primary-orange: #ff8c42;   /* 暖橘色主色 */
+      --accent-mint: #7ec8a0;      /* 薄荷绿辅助色 */
+      --accent-pink: #ffb5b5;      /* 柔粉色点缀 */
+      --text-dark: #4a3728;        /* 深棕色文字 */
+      --text-light: #8b7355;       /* 浅棕色次要文字 */
+      --card-bg: #fffcf5;          /* 卡片背景 */
+      --sidebar-bg: #f5ead6;       /* 侧边栏背景 */
+      --border-dashed: #d4b896;    /* 虚线边框色 */
+      --shadow-soft: rgba(74, 55, 40, 0.08); /* 柔和阴影 */
+      --shadow-hover: rgba(74, 55, 40, 0.15); /* 悬浮阴影 */
+    }
+
+    /* ========================================
+       全局重置与基础样式
+    ======================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Nunito', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background-color: var(--bg-cream);
+      color: var(--text-dark);
+      min-height: 100vh;
+      overflow-x: hidden;
+      /* 纸张纹理背景 */
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 28px,
+          rgba(212, 184, 150, 0.12) 28px,
+          rgba(212, 184, 150, 0.12) 29px
+        );
+    }
+
+    /* ========================================
+       顶部导航栏
+    ======================================== */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--card-bg);
+      border-bottom: 2px dashed var(--border-dashed);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      z-index: 100;
+      box-shadow: 0 2px 12px var(--shadow-soft);
+    }
+
+    .navbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    /* Logo 小镜子图标（CSS 绘制） */
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-orange), #ffb347);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(255, 140, 66, 0.3);
+    }
+
+    .logo-icon::after {
+      content: '~';
+      font-size: 20px;
+      color: white;
+      font-weight: 800;
+      margin-top: -2px;
+    }
+
+    .logo-text {
+      font-family: 'ZCOOL KuaiLe', cursive;
+      font-size: 22px;
+      color: var(--primary-orange);
+      letter-spacing: 1px;
+    }
+
+    .navbar-time {
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      color: var(--text-light);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .time-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent-mint);
+      display: inline-block;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* ========================================
+       侧边栏
+    ======================================== */
+    .sidebar {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      width: 200px;
+      height: calc(100vh - 60px);
+      background: var(--sidebar-bg);
+      border-right: 2px dashed var(--border-dashed);
+      padding: 24px 16px;
+      z-index: 90;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-light);
+      text-decoration: none;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .sidebar-item:hover {
+      background: rgba(255, 140, 66, 0.1);
+      color: var(--primary-orange);
+      transform: translateX(4px);
+    }
+
+    .sidebar-item.active {
+      background: rgba(255, 140, 66, 0.15);
+      color: var(--primary-orange);
+      font-weight: 700;
+    }
+
+    .sidebar-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 24px;
+      background: var(--primary-orange);
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* 侧边栏图标（用 emoji 简化展示） */
+    .sidebar-icon {
+      font-size: 18px;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* 侧边栏底部装饰 */
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-light);
+      opacity: 0.6;
+    }
+
+    /* ========================================
+       主内容区
+    ======================================== */
+    .main-content {
+      margin-left: 200px;
+      margin-top: 60px;
+      padding: 32px;
+      min-height: calc(100vh - 60px);
+    }
+
+    /* ========================================
+       欢迎区域
+    ======================================== */
+    .welcome-section {
+      margin-bottom: 32px;
+      animation: bounce-in 0.6s ease-out both;
+    }
+
+    .welcome-title {
+      font-family: 'ZCOOL KuaiLe', cursive;
+      font-size: 28px;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .welcome-subtitle {
+      font-size: 15px;
+      color: var(--text-light);
+      font-weight: 600;
+    }
+
+    .welcome-subtitle span {
+      color: var(--primary-orange);
+    }
+
+    /* ========================================
+       概览卡片网格
+    ======================================== */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .overview-card {
+      background: var(--card-bg);
+      border: 2px dashed var(--border-dashed);
+      border-radius: 16px;
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 16px var(--shadow-soft);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: bounce-in 0.6s ease-out both;
+    }
+
+    /* 卡片依次延迟弹入 */
+    .overview-card:nth-child(1) { animation-delay: 0.1s; }
+    .overview-card:nth-child(2) { animation-delay: 0.2s; }
+    .overview-card:nth-child(3) { animation-delay: 0.3s; }
+    .overview-card:nth-child(4) { animation-delay: 0.4s; }
+
+    /* 悬浮上浮 + 微旋转效果 */
+    .overview-card:hover {
+      transform: translateY(-6px) rotate(0.8deg);
+      box-shadow: 0 8px 28px var(--shadow-hover);
+    }
+
+    /* 卡片纸张纹理 */
+    .overview-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 80%, rgba(255, 181, 181, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(126, 200, 160, 0.08) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* 手绘涂鸦装饰 - 小星星 */
+    .overview-card:nth-child(1)::after,
+    .overview-card:nth-child(3)::after {
+      content: '✦';
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      font-size: 16px;
+      color: var(--accent-pink);
+      opacity: 0.5;
+      transform: rotate(15deg);
+    }
+
+    /* 手绘涂鸦装饰 - 小花 */
+    .overview-card:nth-child(2)::after,
+    .overview-card:nth-child(4)::after {
+      content: '✿';
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      font-size: 16px;
+      color: var(--accent-mint);
+      opacity: 0.5;
+      transform: rotate(-10deg);
+    }
+
+    .card-label {
+      font-size: 13px;
+      color: var(--text-light);
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-value {
+      font-family: 'ZCOOL KuaiLe', cursive;
+      font-size: 32px;
+      color: var(--text-dark);
+      line-height: 1.1;
+    }
+
+    .card-unit {
+      font-size: 14px;
+      color: var(--text-light);
+      font-weight: 600;
+      margin-left: 4px;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 8px;
+      opacity: 0.8;
+    }
+
+    /* 卡片颜色变体 */
+    .card-orange .card-value { color: var(--primary-orange); }
+    .card-mint .card-value { color: var(--accent-mint); }
+    .card-pink .card-value { color: var(--accent-pink); }
+
+    /* ========================================
+       摆烂指数表情脸（CSS 绘制）
+    ======================================== */
+    .face-container {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #ffe0b2, #ffcc80);
+      position: relative;
+      margin-bottom: 10px;
+      box-shadow: 0 3px 10px rgba(255, 140, 66, 0.25);
+      display: inline-block;
+    }
+
+    /* 眼睛 */
+    .face-container .eye {
+      position: absolute;
+      width: 6px;
+      height: 8px;
+      background: var(--text-dark);
+      border-radius: 50%;
+      top: 18px;
+    }
+
+    .face-container .eye.left { left: 14px; }
+    .face-container .eye.right { right: 14px; }
+
+    /* 嘴巴 - 微笑（摆烂指数35，中等偏低，微微开心） */
+    .face-container .mouth {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18px;
+      height: 9px;
+      border: 2.5px solid var(--text-dark);
+      border-top: none;
+      border-radius: 0 0 18px 18px;
+    }
+
+    /* 腮红 */
+    .face-container .blush {
+      position: absolute;
+      width: 10px;
+      height: 6px;
+      background: var(--accent-pink);
+      border-radius: 50%;
+      top: 26px;
+      opacity: 0.5;
+    }
+
+    .face-container .blush.left { left: 6px; }
+    .face-container .blush.right { right: 6px; }
+
+    /* ========================================
+       快速操作按钮区
+    ======================================== */
+    .actions-section {
+      animation: bounce-in 0.6s ease-out 0.5s both;
+    }
+
+    .actions-title {
+      font-family: 'ZCOOL KuaiLe', cursive;
+      font-size: 20px;
+      color: var(--text-dark);
+      margin-bottom: 16px;
+    }
+
+    .actions-grid {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border: 2px dashed var(--border-dashed);
+      border-radius: 24px;
+      background: var(--card-bg);
+      font-family: 'Nunito', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dark);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 3px 10px var(--shadow-soft);
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px var(--shadow-hover);
+      border-color: var(--primary-orange);
+    }
+
+    /* 弹性点击效果 */
+    .action-btn:active {
+      transform: scale(0.93);
+      box-shadow: 0 1px 4px var(--shadow-soft);
+    }
+
+    .action-btn .btn-icon {
+      font-size: 18px;
+    }
+
+    .action-btn.btn-primary {
+      background: linear-gradient(135deg, var(--primary-orange), #ffa366);
+      color: white;
+      border-color: transparent;
+    }
+
+    .action-btn.btn-primary:hover {
+      background: linear-gradient(135deg, #ff7a25, var(--primary-orange));
+      border-color: transparent;
+    }
+
+    .action-btn.btn-mint {
+      border-color: var(--accent-mint);
+      color: var(--accent-mint);
+    }
+
+    .action-btn.btn-mint:hover {
+      background: rgba(126, 200, 160, 0.1);
+    }
+
+    .action-btn.btn-pink {
+      border-color: var(--accent-pink);
+      color: #e88a8a;
+    }
+
+    .action-btn.btn-pink:hover {
+      background: rgba(255, 181, 181, 0.1);
+    }
+
+    /* ========================================
+       悬浮玩偶 - 右下角猫咪
+    ======================================== */
+    .floating-mascot {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 200;
+      animation: wobble 3s ease-in-out infinite;
+      cursor: pointer;
+      filter: drop-shadow(0 4px 12px rgba(74, 55, 40, 0.15));
+    }
+
+    .mascot-body {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #ffe4c9, #ffd1a3);
+      position: relative;
+      border: 2.5px solid var(--border-dashed);
+    }
+
+    /* 猫耳朵 */
+    .mascot-ear {
+      position: absolute;
+      top: -10px;
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 16px solid #ffd1a3;
+    }
+
+    .mascot-ear.left { left: 6px; transform: rotate(-10deg); }
+    .mascot-ear.right { right: 6px; transform: rotate(10deg); }
+
+    /* 猫耳朵内部 */
+    .mascot-ear::after {
+      content: '';
+      position: absolute;
+      top: 5px;
+      left: -5px;
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-bottom: 9px solid var(--accent-pink);
+    }
+
+    /* 猫眼睛 */
+    .mascot-eye {
+      position: absolute;
+      width: 7px;
+      height: 9px;
+      background: var(--text-dark);
+      border-radius: 50%;
+      top: 22px;
+    }
+
+    .mascot-eye.left { left: 16px; }
+    .mascot-eye.right { right: 16px; }
+
+    /* 猫鼻子 */
+    .mascot-nose {
+      position: absolute;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 6px;
+      height: 4px;
+      background: var(--accent-pink);
+      border-radius: 50%;
+    }
+
+    /* 猫嘴巴 */
+    .mascot-mouth {
+      position: absolute;
+      top: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 7px;
+      border: 2px solid var(--text-dark);
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+    }
+
+    /* 猫腮红 */
+    .mascot-blush {
+      position: absolute;
+      width: 10px;
+      height: 6px;
+      background: var(--accent-pink);
+      border-radius: 50%;
+      top: 30px;
+      opacity: 0.4;
+    }
+
+    .mascot-blush.left { left: 6px; }
+    .mascot-blush.right { right: 6px; }
+
+    /* 猫咪对话气泡 */
+    .mascot-bubble {
+      position: absolute;
+      bottom: 72px;
+      right: 0;
+      background: white;
+      border: 2px dashed var(--border-dashed);
+      border-radius: 16px;
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dark);
+      white-space: nowrap;
+      box-shadow: 0 2px 10px var(--shadow-soft);
+      opacity: 0;
+      transform: translateY(6px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .mascot-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      right: 20px;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid white;
+    }
+
+    .floating-mascot:hover .mascot-bubble {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ========================================
+       动画关键帧
+    ======================================== */
+
+    /* 从下方弹入效果 */
+    @keyframes bounce-in {
+      0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+      }
+      60% {
+        opacity: 1;
+        transform: translateY(-6px) scale(1.02);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* 猫咪左右摇摆动画 */
+    @keyframes wobble {
+      0%, 100% { transform: rotate(0deg); }
+      15% { transform: rotate(6deg); }
+      30% { transform: rotate(-5deg); }
+      45% { transform: rotate(4deg); }
+      60% { transform: rotate(-3deg); }
+      75% { transform: rotate(2deg); }
+      90% { transform: rotate(-1deg); }
+    }
+
+    /* ========================================
+       装饰性元素
+    ======================================== */
+
+    /* 页面角落装饰 */
+    .corner-decor {
+      position: fixed;
+      font-size: 24px;
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .corner-decor.top-left {
+      top: 80px;
+      left: 220px;
+      transform: rotate(-15deg);
+    }
+
+    .corner-decor.bottom-right {
+      bottom: 100px;
+      right: 120px;
+      transform: rotate(20deg);
+    }
+
+    /* ========================================
+       响应式适配
+    ======================================== */
+    @media (max-width: 768px) {
+      .sidebar {
+        display: none;
+      }
+
+      .main-content {
+        margin-left: 0;
+      }
+
+      .cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ========================================
+       顶部导航栏
+  ======================================== -->
+  <nav class="navbar">
+    <a class="navbar-logo" href="#">
+      <div class="logo-icon"></div>
+      <span class="logo-text">FlowMirror</span>
+    </a>
+    <div class="navbar-time">
+      <span class="time-dot"></span>
+      2026 年 4 月 17 日 &nbsp;|&nbsp; 周五 &nbsp;|&nbsp; 14:32
+    </div>
+  </nav>
+
+  <!-- ========================================
+       侧边栏菜单
+  ======================================== -->
+  <aside class="sidebar">
+    <a class="sidebar-item active" href="#">
+      <span class="sidebar-icon">🏠</span>
+      首页
+    </a>
+    <a class="sidebar-item" href="#">
+      <span class="sidebar-icon">📊</span>
+      实时监测
+    </a>
+    <a class="sidebar-item" href="#">
+      <span class="sidebar-icon">📈</span>
+      结果分析
+    </a>
+    <a class="sidebar-item" href="#">
+      <span class="sidebar-icon">📅</span>
+      历史记录
+    </a>
+    <a class="sidebar-item" href="#">
+      <span class="sidebar-icon">🐱</span>
+      宠物中心
+    </a>
+
+    <div class="sidebar-footer">
+      FlowMirror v1.0<br>
+      用温柔记录每一天
+    </div>
+  </aside>
+
+  <!-- ========================================
+       主内容区
+  ======================================== -->
+  <main class="main-content">
+
+    <!-- 欢迎区域 -->
+    <section class="welcome-section">
+      <h1 class="welcome-title">下午好呀，小懒虫 ~</h1>
+      <p class="welcome-subtitle">
+        今天是你坚持记录的第 <span>7</span> 天，继续保持哦！
+      </p>
+    </section>
+
+    <!-- ========================================
+         概览卡片
+    ======================================== -->
+    <div class="cards-grid">
+
+      <!-- 卡片1：摆烂指数 -->
+      <div class="overview-card card-orange">
+        <div class="card-label">摆烂指数</div>
+        <!-- CSS 绘制的表情脸 -->
+        <div class="face-container">
+          <div class="eye left"></div>
+          <div class="eye right"></div>
+          <div class="blush left"></div>
+          <div class="blush right"></div>
+          <div class="mouth"></div>
+        </div>
+        <div class="card-value">35<span class="card-unit">/ 100</span></div>
+        <div class="card-desc">状态还不错，继续加油~</div>
+      </div>
+
+      <!-- 卡片2：有效工作时长 -->
+      <div class="overview-card card-mint">
+        <div class="card-label">有效工作</div>
+        <div class="card-value">4.5<span class="card-unit">小时</span></div>
+        <div class="card-desc">比昨天多了 0.5 小时</div>
+      </div>
+
+      <!-- 卡片3：切换次数 -->
+      <div class="overview-card card-pink">
+        <div class="card-label">切换次数</div>
+        <div class="card-value">12<span class="card-unit">次</span></div>
+        <div class="card-desc">注意力还算集中呢</div>
+      </div>
+
+      <!-- 卡片4：最长连续 -->
+      <div class="overview-card card-orange">
+        <div class="card-label">最长连续</div>
+        <div class="card-value">90<span class="card-unit">分钟</span></div>
+        <div class="card-desc">专注力棒棒的！</div>
+      </div>
+
+    </div>
+
+    <!-- ========================================
+         快速操作按钮区
+    ======================================== -->
+    <section class="actions-section">
+      <h2 class="actions-title">快速操作</h2>
+      <div class="actions-grid">
+        <a class="action-btn btn-primary" href="#">
+          <span class="btn-icon">▶</span>
+          开始监测
+        </a>
+        <a class="action-btn btn-mint" href="#">
+          <span class="btn-icon">📋</span>
+          查看报告
+        </a>
+        <a class="action-btn btn-pink" href="#">
+          <span class="btn-icon">🎯</span>
+          设置目标
+        </a>
+        <a class="action-btn" href="#">
+          <span class="btn-icon">🎁</span>
+          喂养宠物
+        </a>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================
+       悬浮猫咪玩偶
+  ======================================== -->
+  <div class="floating-mascot">
+    <div class="mascot-bubble">今天也要元气满满哦~</div>
+    <div class="mascot-body">
+      <div class="mascot-ear left"></div>
+      <div class="mascot-ear right"></div>
+      <div class="mascot-eye left"></div>
+      <div class="mascot-eye right"></div>
+      <div class="mascot-nose"></div>
+      <div class="mascot-mouth"></div>
+      <div class="mascot-blush left"></div>
+      <div class="mascot-blush right"></div>
+    </div>
+  </div>
+
+  <!-- 装饰性角落元素 -->
+  <div class="corner-decor top-left">✧</div>
+  <div class="corner-decor bottom-right">❀</div>
+
+</body>
+</html>
